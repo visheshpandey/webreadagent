@@ -20,7 +20,6 @@ class Product:
     name: str
     price: str
     description: str
-    add_to_cart_test_id: str
 
 
 def list_products(log=print) -> list[Product]:
@@ -41,8 +40,7 @@ def list_products(log=print) -> list[Product]:
             name = item.locator(".inventory_item_name").inner_text()
             price = item.locator(".inventory_item_price").inner_text()
             desc = item.locator(".inventory_item_desc").inner_text()
-            test_id = "add-to-cart-" + name.lower().replace(" ", "-").replace(".", "")
-            products.append(Product(name=name, price=price, description=desc, add_to_cart_test_id=test_id))
+            products.append(Product(name=name, price=price, description=desc))
 
         browser.close()
         log(f"Read {len(products)} live product listings from {BASE_URL}")
@@ -66,8 +64,8 @@ def buy_product(product_name: str, buyer_first_name: str, buyer_last_name: str,
         page.wait_for_selector(".inventory_list", timeout=10000)
         log(f"Logged in to {BASE_URL}")
 
-        test_id = "add-to-cart-" + product_name.lower().replace(" ", "-").replace(".", "")
-        page.click(f'button[data-test="{test_id}"]')
+        item_row = page.locator(".inventory_item").filter(has_text=product_name)
+        item_row.locator("button").click()
         log(f"Added '{product_name}' to cart")
 
         page.click(".shopping_cart_link")
