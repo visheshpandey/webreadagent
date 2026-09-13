@@ -95,30 +95,48 @@ def buy_product(product_name: str, buyer_first_name: str, buyer_last_name: str,
             p, log, headless=headless, slow_mo_ms=slow_mo_ms, record=record,
             use_anakin_browser=use_anakin_browser,
         )
+
+        # slow_mo passed to a local browser launch only paces Playwright's own
+        # API calls; it does nothing for a remote CDP connection to Anakin's
+        # cloud browser, whose actions otherwise happen almost instantly. So
+        # pace explicitly with waits between steps whenever recording (or
+        # running headed) so the resulting video/live view is actually watchable.
+        pace_ms = slow_mo_ms if (record or not headless) else 0
+
+        def pace():
+            if pace_ms:
+                page.wait_for_timeout(pace_ms)
+
         page.goto(BASE_URL, timeout=20000)
+        pace()
         page.fill("#user-name", LOGIN_USER)
         page.fill("#password", LOGIN_PASS)
         page.click("#login-button")
         page.wait_for_selector(".inventory_list", timeout=10000)
         log(f"Logged in to {BASE_URL}")
+        pace()
 
         item_row = page.locator(".inventory_item").filter(has_text=product_name)
         item_row.locator("button").click()
         log(f"Added '{product_name}' to cart")
+        pace()
 
         page.click(".shopping_cart_link")
         page.wait_for_selector(".cart_list", timeout=10000)
+        pace()
 
         page.click("#checkout")
         page.wait_for_selector("#first-name", timeout=10000)
         page.fill("#first-name", buyer_first_name)
         page.fill("#last-name", buyer_last_name)
         page.fill("#postal-code", buyer_zip)
+        pace()
         page.click("#continue")
         page.wait_for_selector(".summary_info", timeout=10000)
 
         total = page.locator(".summary_total_label").inner_text()
         log(f"Checkout summary: {total}")
+        pace()
 
         page.click("#finish")
         page.wait_for_selector(".complete-header", timeout=10000)
@@ -127,8 +145,9 @@ def buy_product(product_name: str, buyer_first_name: str, buyer_last_name: str,
         page.screenshot(path=screenshot_path, full_page=True)
         log(f"Saved confirmation screenshot to {screenshot_path}")
 
-        if not headless:
-            page.wait_for_timeout(3000)
+        # Hold on the final confirmation page so it's visible for a moment
+        # rather than the session ending the instant it appears.
+        page.wait_for_timeout(3000 if (record or not headless) else 0)
 
         browser.close()
 

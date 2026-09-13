@@ -26,8 +26,8 @@ def main() -> int:
         help="Show the real browser window instead of running headless (useful for screen recordings)",
     )
     parser.add_argument(
-        "--slow-mo", type=int, default=300,
-        help="Milliseconds to slow down each browser action by in --headed mode (default: 300)",
+        "--slow-mo", type=int, default=700,
+        help="Milliseconds to pause between browser steps when --headed or --record is set (default: 700)",
     )
     parser.add_argument(
         "--record", action="store_true",
@@ -51,7 +51,7 @@ def main() -> int:
             buyer_zip=args.zip,
             screenshot_path=args.screenshot,
             headless=not args.headed,
-            slow_mo_ms=args.slow_mo if args.headed else 0,
+            slow_mo_ms=args.slow_mo if (args.headed or args.record) else 0,
             record=args.record,
             video_path=args.video,
             use_anakin_browser=not args.local_browser,
