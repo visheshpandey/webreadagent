@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anakai — Read, Reason, Act Agents</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  :root {
+    --bg: #0b0d14;
+    --bg-soft: #11141d;
+    --card: #161a26;
+    --card-border: #262b3a;
+    --text: #e9ebf3;
+    --text-dim: #9aa0b4;
+    --accent: #7c6cff;
+    --accent-2: #33d9c7;
+    --accent-grad: linear-gradient(135deg, #7c6cff 0%, #33d9c7 100%);
+    --danger: #ff6b6b;
+    --success: #38d996;
+    --radius: 16px;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: radial-gradient(1200px 600px at 20% -10%, #1c2140 0%, var(--bg) 55%),
+                radial-gradient(900px 500px at 100% 0%, #10231f 0%, var(--bg) 60%),
+                var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+  }
+
+  .wrap {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+  }
+
+  header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 36px;
+    gap: 10px;
+  }
+
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .logo .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent-grad);
+    box-shadow: 0 0 20px rgba(124, 108, 255, 0.7);
+  }
+
+  header p {
+    color: var(--text-dim);
+    margin: 0;
+    font-size: 15px;
+    max-width: 480px;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 8px;
+    background: var(--bg-soft);
+    border: 1px solid var(--card-border);
+    padding: 6px;
+    border-radius: 999px;
+    width: fit-content;
+    margin: 0 auto 28px;
+  }
+
+  .tab-btn {
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    padding: 10px 22px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .tab-btn.active {
+    background: var(--accent-grad);
+    color: #08090d;
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; animation: fade 0.25s ease; }
+
+  @keyframes fade {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+
+  .card h2 {
+    margin: 0 0 4px;
+    font-size: 18px;
+  }
+
+  .card .sub {
+    color: var(--text-dim);
+    font-size: 13px;
+    margin: 0 0 18px;
+  }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+
+  input[type="text"], input[type="number"], textarea {
+    width: 100%;
+    background: var(--bg-soft);
+    border: 1px solid var(--card-border);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+
+  input:focus, textarea:focus {
+    border-color: var(--accent);
+  }
+
+  .row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 140px; }
+
+  .field { margin-bottom: 16px; }
+
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+
+  .checkbox-row input { width: auto; }
+
+  details {
+    margin-bottom: 16px;
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 4px 14px;
+  }
+
+  details summary {
+    cursor: pointer;
+    padding: 10px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dim);
+  }
+
+  details[open] summary { margin-bottom: 6px; }
+
+  button.run {
+    width: 100%;
+    background: var(--accent-grad);
+    border: none;
+    color: #08090d;
+    font-weight: 700;
+    font-size: 15px;
+    padding: 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.1s ease, opacity 0.2s ease;
+  }
+
+  button.run:hover { transform: translateY(-1px); }
+  button.run:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .console {
+    background: #05060a;
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: #8ff0c8;
+    max-height: 260px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    display: none;
+  }
+
+  .console.visible { display: block; }
+  .console .line { padding: 2px 0; color: var(--text-dim); }
+  .console .line.new { color: #8ff0c8; }
+
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+
+  .status .spinner {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--card-border);
+    border-top-color: var(--accent);
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .status.error { color: var(--danger); }
+  .status.success { color: var(--success); }
+
+  .result { display: none; }
+  .result.visible { display: block; animation: fade 0.3s ease; }
+
+  .report-body {
+    line-height: 1.6;
+    font-size: 14.5px;
+  }
+  .report-body h1 { font-size: 20px; }
+  .report-body h2 { font-size: 17px; margin-top: 22px; }
+  .report-body h3 { font-size: 15px; }
+  .report-body a { color: var(--accent-2); }
+  .report-body code { background: var(--bg-soft); padding: 2px 5px; border-radius: 4px; font-size: 12.5px; }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 10px 16px;
+    font-size: 14px;
+    margin-bottom: 18px;
+  }
+  .summary-grid dt { color: var(--text-dim); font-weight: 600; }
+  .summary-grid dd { margin: 0; }
+
+  .media-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; }
+  .media-row figure { margin: 0; flex: 1; min-width: 240px; }
+  .media-row img, .media-row video {
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    display: block;
+  }
+  .media-row figcaption { color: var(--text-dim); font-size: 12px; margin-top: 6px; }
+
+  .footer-note {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 12.5px;
+    margin-top: 30px;
+  }
+
+  @media (max-width: 480px) {
+    .wrap { padding: 24px 14px 60px; }
+    .logo { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo"><span class="dot"></span>Anakai</div>
+    <p>Two AI agents that browse the live web, reason with an LLM, and take real actions — powered by Anakin.</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="research">Research Agent</button>
+    <button class="tab-btn" data-tab="shop">Shopping Agent</button>
+  </div>
+
+  <!-- Research panel -->
+  <div class="panel active" id="panel-research">
+    <div class="card">
+      <h2>Ask a question</h2>
+      <p class="sub">The agent plans search queries, reads live sources, and writes a cited report.</p>
+
+      <div class="field">
+        <label for="r-question">Question</label>
+        <textarea id="r-question" rows="2" placeholder="e.g. What are the latest developments in solid-state batteries?"></textarea>
+      </div>
+
+      <details>
+        <summary>Advanced options</summary>
+        <div class="field" style="margin-top:10px;">
+          <label for="r-sources">Sources per query</label>
+          <input type="number" id="r-sources" value="4" min="1" max="10" />
+        </div>
+      </details>
+
+      <button class="run" id="r-run">Run research agent</button>
+    </div>
+
+    <div class="card" id="r-progress-card" style="display:none;">
+      <div class="status" id="r-status"><span class="spinner"></span><span>Running…</span></div>
+      <div class="console" id="r-console"></div>
+    </div>
+
+    <div class="card result" id="r-result">
+      <h2>Report</h2>
+      <div class="report-body" id="r-report"></div>
+    </div>
+  </div>
+
+  <!-- Shop panel -->
+  <div class="panel" id="panel-shop">
+    <div class="card">
+      <h2>What do you want to buy?</h2>
+      <p class="sub">The agent researches market context, reads a live catalog, picks the best match, and completes checkout for real.</p>
+
+      <div class="field">
+        <label for="s-want">What you want</label>
+        <textarea id="s-want" rows="2" placeholder="e.g. a durable backpack for daily commuting under 40 dollars"></textarea>
+      </div>
+
+      <details>
+        <summary>Advanced options</summary>
+        <div class="row" style="margin-top:10px;">
+          <div class="field">
+            <label for="s-first">First name</label>
+            <input type="text" id="s-first" value="Anakin" />
+          </div>
+          <div class="field">
+            <label for="s-last">Last name</label>
+            <input type="text" id="s-last" value="Forge" />
+          </div>
+          <div class="field">
+            <label for="s-zip">ZIP code</label>
+            <input type="text" id="s-zip" value="94107" />
+          </div>
+        </div>
+        <div class="checkbox-row">
+          <input type="checkbox" id="s-record" checked />
+          <label for="s-record" style="margin:0;">Record the checkout session as a video (via Anakin)</label>
+        </div>
+      </details>
+
+      <button class="run" id="s-run">Run shopping agent</button>
+    </div>
+
+    <div class="card" id="s-progress-card" style="display:none;">
+      <div class="status" id="s-status"><span class="spinner"></span><span>Running…</span></div>
+      <div class="console" id="s-console"></div>
+    </div>
+
+    <div class="card result" id="s-result">
+      <h2>Order complete</h2>
+      <dl class="summary-grid" id="s-summary"></dl>
+      <div class="media-row" id="s-media"></div>
+    </div>
+  </div>
+
+  <p class="footer-note">Built for the Anakin Forge hackathon — real live web search, real browser automation, real actions.</p>
+</div>
+
+<script>
+function makeTabs() {
+  const buttons = document.querySelectorAll(".tab-btn");
+  buttons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      buttons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+      document.getElementById("panel-" + btn.dataset.tab).classList.add("active");
+    });
+  });
+}
+
+function wsUrl(path) {
+  const proto = location.protocol === "https:" ? "wss:" : "ws:";
+  return proto + "//" + location.host + path;
+}
+
+function appendLog(consoleEl, message) {
+  const line = document.createElement("div");
+  line.className = "line new";
+  line.textContent = message;
+  consoleEl.appendChild(line);
+  consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+
+function setStatus(el, mode, text) {
+  el.className = "status" + (mode ? " " + mode : "");
+  if (mode === "running") {
+    el.innerHTML = '<span class="spinner"></span><span>' + text + "</span>";
+  } else {
+    el.innerHTML = "<span>" + text + "</span>";
+  }
+}
+
+// ---- Research ----
+function runResearch() {
+  const question = document.getElementById("r-question").value.trim();
+  if (!question) { alert("Please enter a question."); return; }
+  const sources = parseInt(document.getElementById("r-sources").value || "4", 10);
+
+  const btn = document.getElementById("r-run");
+  const progressCard = document.getElementById("r-progress-card");
+  const statusEl = document.getElementById("r-status");
+  const consoleEl = document.getElementById("r-console");
+  const resultEl = document.getElementById("r-result");
+
+  btn.disabled = true;
+  progressCard.style.display = "block";
+  resultEl.classList.remove("visible");
+  consoleEl.innerHTML = "";
+  consoleEl.classList.add("visible");
+  setStatus(statusEl, "running", "Running…");
+
+  const ws = new WebSocket(wsUrl("/ws/research"));
+  ws.onopen = () => ws.send(JSON.stringify({ question, sources }));
+  ws.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+    if (msg.type === "log") {
+      appendLog(consoleEl, msg.message);
+    } else if (msg.type === "done") {
+      setStatus(statusEl, "success", "Done");
+      document.getElementById("r-report").innerHTML = marked.parse(msg.result || "");
+      resultEl.classList.add("visible");
+      btn.disabled = false;
+    } else if (msg.type === "error") {
+      setStatus(statusEl, "error", "Error: " + msg.message);
+      btn.disabled = false;
+    }
+  };
+  ws.onerror = () => {
+    setStatus(statusEl, "error", "Connection error");
+    btn.disabled = false;
+  };
+}
+
+// ---- Shop ----
+function runShop() {
+  const want = document.getElementById("s-want").value.trim();
+  if (!want) { alert("Please describe what you want to buy."); return; }
+  const first_name = document.getElementById("s-first").value.trim() || "Anakin";
+  const last_name = document.getElementById("s-last").value.trim() || "Forge";
+  const zip = document.getElementById("s-zip").value.trim() || "94107";
+  const record = document.getElementById("s-record").checked;
+
+  const btn = document.getElementById("s-run");
+  const progressCard = document.getElementById("s-progress-card");
+  const statusEl = document.getElementById("s-status");
+  const consoleEl = document.getElementById("s-console");
+  const resultEl = document.getElementById("s-result");
+
+  btn.disabled = true;
+  progressCard.style.display = "block";
+  resultEl.classList.remove("visible");
+  consoleEl.innerHTML = "";
+  consoleEl.classList.add("visible");
+  setStatus(statusEl, "running", "Running…");
+
+  const ws = new WebSocket(wsUrl("/ws/shop"));
+  ws.onopen = () => ws.send(JSON.stringify({ want, first_name, last_name, zip, record }));
+  ws.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+    if (msg.type === "log") {
+      appendLog(consoleEl, msg.message);
+    } else if (msg.type === "done") {
+      setStatus(statusEl, "success", "Done");
+      const r = msg.result;
+      const summary = document.getElementById("s-summary");
+      summary.innerHTML =
+        "<dt>Want</dt><dd>" + r.want + "</dd>" +
+        "<dt>Chosen product</dt><dd>" + r.chosen_product + " (" + r.chosen_price + ")</dd>" +
+        "<dt>Reason</dt><dd>" + r.reason + "</dd>" +
+        "<dt>Order total</dt><dd>" + r.order.total + "</dd>" +
+        "<dt>Confirmation</dt><dd>" + r.order.confirmation + "</dd>";
+
+      const media = document.getElementById("s-media");
+      media.innerHTML = "";
+      if (r.screenshot_url) {
+        media.innerHTML += '<figure><img src="' + r.screenshot_url + '" alt="Order confirmation" />' +
+          "<figcaption>Confirmation screenshot</figcaption></figure>";
+      }
+      if (r.video_url) {
+        media.innerHTML += '<figure><video src="' + r.video_url + '" controls></video>' +
+          "<figcaption>Recorded checkout session</figcaption></figure>";
+      }
+
+      resultEl.classList.add("visible");
+      btn.disabled = false;
+    } else if (msg.type === "error") {
+      setStatus(statusEl, "error", "Error: " + msg.message);
+      btn.disabled = false;
+    }
+  };
+  ws.onerror = () => {
+    setStatus(statusEl, "error", "Connection error");
+    btn.disabled = false;
+  };
+}
+
+document.getElementById("r-run").addEventListener("click", runResearch);
+document.getElementById("s-run").addEventListener("click", runShop);
+makeTabs();
+</script>
+</body>
+</html>

@@ -66,6 +66,16 @@ python shop.py "a durable backpack for daily commuting under 40 dollars" --heade
 
 `--slow-mo` (default `300`, only applies with `--headed`) adds a delay in milliseconds between browser actions so each click is easy to follow on camera.
 
+## Web UI
+
+Both agents can also be launched from a browser instead of the CLI — a single page with a tab for each agent, a live streaming console showing each step as it happens, and the final report/order (with the screenshot and video) rendered inline.
+
+```bash
+python run_webapp.py
+```
+
+Then open http://127.0.0.1:8787. Under the hood it's a small FastAPI app (`webapp/server.py`) that runs each agent in a background thread and streams its `log()` callback over a WebSocket to the page in real time.
+
 ## Setup
 
 ```bash
@@ -89,6 +99,10 @@ research_agent/
   agent.py         # research agent orchestration
   shop_browser.py  # browser automation against the live demo storefront (Anakin cloud browser, falls back to local Playwright)
   shop_agent.py    # shopping agent orchestration (research -> reason -> act)
-research.py        # research agent CLI
-shop.py            # shopping agent CLI
+webapp/
+  server.py        # FastAPI app: serves the UI and streams agent progress over WebSockets
+  static/index.html # single-page frontend (tabs, live console, results)
+research.py         # research agent CLI
+shop.py             # shopping agent CLI
+run_webapp.py        # launches the web UI
 ```
