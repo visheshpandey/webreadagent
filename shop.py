@@ -29,6 +29,11 @@ def main() -> int:
         "--slow-mo", type=int, default=300,
         help="Milliseconds to slow down each browser action by in --headed mode (default: 300)",
     )
+    parser.add_argument(
+        "--record", action="store_true",
+        help="Record the checkout session as a video via Anakin's Browser API (requires ANAKIN_API_KEY)",
+    )
+    parser.add_argument("--video", default="order_session.webm", help="Path to save the recorded session video to")
     args = parser.parse_args()
 
     load_dotenv()
@@ -42,6 +47,8 @@ def main() -> int:
             screenshot_path=args.screenshot,
             headless=not args.headed,
             slow_mo_ms=args.slow_mo if args.headed else 0,
+            record=args.record,
+            video_path=args.video,
         )
     except RuntimeError as e:
         print(f"Error: {e}", file=sys.stderr)
@@ -54,6 +61,8 @@ def main() -> int:
     print(f"Order total: {result['order']['total']}")
     print(f"Confirmation: {result['order']['confirmation']}")
     print(f"Screenshot: {result['screenshot']}")
+    if result.get("video"):
+        print(f"Session recording: {result['video']}")
 
     return 0
 

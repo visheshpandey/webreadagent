@@ -2,9 +2,12 @@
 reason about the best match, then take a real action (buy it)."""
 
 import os
+import time
+from datetime import datetime, timezone
 
 from google import genai
 
+from . import anakin_client
 from .search import search_many
 from .fetch import fetch_text
 from .shop_browser import Product, buy_product, list_products
@@ -68,8 +71,34 @@ def _choose_product(client: genai.Client, want: str, market_context: str, produc
     return chosen, reason or text
 
 
+def _download_latest_recording(log, since_iso: str, out_path: str, attempts: int = 10, delay_s: float = 2.0) -> str | None:
+    """Poll Anakin's recordings list for the session we just ran (matched by
+    completion time) and download it. Recordings finalize a few seconds after
+    the browser disconnects, so this retries briefly."""
+    for _ in range(attempts):
+        try:
+            recordings = anakin_client.list_recordings()
+        except Exception:
+            recordings = []
+        candidates = [
+            r for r in recordings
+            if r.get("status") == "completed" and r.get("createdAt", "") >= since_iso
+        ]
+        if candidates:
+            candidates.sort(key=lambda r: r.get("createdAt", ""), reverse=True)
+            rec = candidates[0]
+            rec_id = rec.get("id") or rec.get("connId")
+            if rec_id and anakin_client.download_recording(rec_id, out_path):
+                log(f"Downloaded Anakin session recording to {out_path}")
+                return out_path
+        time.sleep(delay_s)
+    log("Anakin session recording not available yet (it may still be processing)")
+    return None
+
+
 def run(want: str, buyer_first_name: str, buyer_last_name: str, buyer_zip: str,
-        screenshot_path: str, log=print, headless: bool = True, slow_mo_ms: int = 0) -> dict:
+        screenshot_path: str, log=print, headless: bool = True, slow_mo_ms: int = 0,
+        record: bool = False, video_path: str = "order_session.webm") -> dict:
     client = _get_client()
 
     market_context = _research_market_context(client, want, log)
@@ -82,11 +111,17 @@ def run(want: str, buyer_first_name: str, buyer_last_name: str, buyer_zip: str,
     log(f"Chosen: {chosen.name} ({chosen.price}) -- {reason}")
 
     log("Taking action: adding to cart and completing checkout...")
+    record = record and anakin_client.is_configured()
+    session_start = datetime.now(timezone.utc).isoformat()
     order = buy_product(
         chosen.name, buyer_first_name, buyer_last_name, buyer_zip,
         screenshot_path=screenshot_path, log=log,
-        headless=headless, slow_mo_ms=slow_mo_ms,
+        headless=headless, slow_mo_ms=slow_mo_ms, record=record,
     )
+
+    video = None
+    if record:
+        video = _download_latest_recording(log, session_start, video_path)
 
     return {
         "want": want,
@@ -95,4 +130,5 @@ def run(want: str, buyer_first_name: str, buyer_last_name: str, buyer_zip: str,
         "reason": reason,
         "order": order,
         "screenshot": screenshot_path,
+        "video": video,
     }

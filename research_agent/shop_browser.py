@@ -4,11 +4,18 @@ saucedemo.com is a stable, bot-friendly e-commerce site built by Sauce Labs
 for automation testing, so it is used here for the "take a real action" step
 instead of a real retailer, which would aggressively block bot traffic and
 make the demo unreliable.
+
+When ANAKIN_API_KEY is set, the browser itself is Anakin's managed cloud
+browser (connected over CDP) rather than a local Chromium instance, so the
+same Playwright script drives a remote, optionally screen-recorded session.
+Falls back to a local browser if no key is set or the remote connection fails.
 """
 
 from dataclasses import dataclass
 
 from playwright.sync_api import sync_playwright
+
+from . import anakin_client
 
 BASE_URL = "https://www.saucedemo.com/"
 LOGIN_USER = "standard_user"
@@ -22,11 +29,30 @@ class Product:
     description: str
 
 
+def _open_browser(p, log, headless: bool = True, slow_mo_ms: int = 0, record: bool = False):
+    """Return (browser, page). Prefers Anakin's cloud browser when configured."""
+    if anakin_client.is_configured():
+        try:
+            opts = anakin_client.browser_connect_options(record=record)
+            browser = p.chromium.connect_over_cdp(opts["ws_endpoint"], headers=opts["headers"])
+            if browser.contexts and browser.contexts[0].pages:
+                page = browser.contexts[0].pages[0]
+            else:
+                page = browser.new_page()
+            log("Connected to Anakin's cloud browser" + (" (recording)" if record else ""))
+            return browser, page
+        except Exception as e:
+            log(f"Could not connect to Anakin's browser ({e}), falling back to a local browser")
+
+    browser = p.chromium.launch(headless=headless, slow_mo=slow_mo_ms)
+    page = browser.new_page()
+    return browser, page
+
+
 def list_products(log=print, headless: bool = True) -> list[Product]:
     """Log in and scrape the live product catalog (name, price, description)."""
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=headless)
-        page = browser.new_page()
+        browser, page = _open_browser(p, log, headless=headless)
         page.goto(BASE_URL, timeout=20000)
         page.fill("#user-name", LOGIN_USER)
         page.fill("#password", LOGIN_PASS)
@@ -49,17 +75,17 @@ def list_products(log=print, headless: bool = True) -> list[Product]:
 
 def buy_product(product_name: str, buyer_first_name: str, buyer_last_name: str,
                  buyer_zip: str, screenshot_path: str, log=print,
-                 headless: bool = True, slow_mo_ms: int = 0) -> dict:
+                 headless: bool = True, slow_mo_ms: int = 0, record: bool = False) -> dict:
     """Log in, add the named product to cart, and complete checkout end-to-end.
 
     Returns a dict with the order summary and confirmation message. This is a
     real, reversible action (no real payment) that leaves a screenshot as proof.
-    Set headless=False (and optionally slow_mo_ms) to watch the browser live,
-    e.g. for a screen-recorded demo.
+    Set headless=False (and optionally slow_mo_ms) to watch a local browser live.
+    Set record=True (requires ANAKIN_API_KEY) to have Anakin record the remote
+    session server-side as a WebM video.
     """
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=headless, slow_mo=slow_mo_ms)
-        page = browser.new_page()
+        browser, page = _open_browser(p, log, headless=headless, slow_mo_ms=slow_mo_ms, record=record)
         page.goto(BASE_URL, timeout=20000)
         page.fill("#user-name", LOGIN_USER)
         page.fill("#password", LOGIN_PASS)

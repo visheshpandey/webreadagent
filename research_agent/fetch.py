@@ -1,7 +1,11 @@
-"""Fetch a URL and extract readable text from it."""
+"""Fetch a URL and extract readable text, preferring Anakin's managed URL
+Scraper (handles JS-heavy pages and anti-bot measures) when configured,
+falling back to a plain requests + BeautifulSoup fetch otherwise."""
 
 import requests
 from bs4 import BeautifulSoup
+
+from . import anakin_client
 
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -12,8 +16,7 @@ TIMEOUT_SECONDS = 10
 MAX_CHARS_PER_PAGE = 6000
 
 
-def fetch_text(url: str) -> str | None:
-    """Fetch a URL and return cleaned, truncated body text, or None on failure."""
+def _fetch_text_plain(url: str) -> str | None:
     try:
         resp = requests.get(
             url,
@@ -37,3 +40,13 @@ def fetch_text(url: str) -> str | None:
         return None
 
     return text[:MAX_CHARS_PER_PAGE]
+
+
+def fetch_text(url: str) -> str | None:
+    """Fetch a URL and return cleaned, truncated body text, or None on failure."""
+    if anakin_client.is_configured():
+        text = anakin_client.scrape(url, max_chars=MAX_CHARS_PER_PAGE)
+        if text:
+            return text
+        # Fall through to the plain fetch if Anakin's job failed or timed out.
+    return _fetch_text_plain(url)
