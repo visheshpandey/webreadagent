@@ -19,6 +19,8 @@ python research.py "What are the latest developments in solid-state batteries?"
 python research.py "your question" --output report.md --sources 6
 ```
 
+Sample output: [examples/sample_research_report.md](examples/sample_research_report.md)
+
 ## 2. Shopping agent (`shop.py`)
 
 Goes beyond research: it reads real market context from the web, reasons about the best matching product from a **live product catalog**, then **takes a real action** — adds the item to cart and completes checkout end-to-end via a real browser (Playwright), leaving a screenshot as proof.
@@ -36,6 +38,10 @@ python shop.py "a durable backpack for daily commuting under 40 dollars"
 # customize the checkout details and screenshot path
 python shop.py "your want" --first-name Jane --last-name Doe --zip 10001 --screenshot proof.png
 ```
+
+Sample run: asked for "a lightweight jacket for cool weather under 50 dollars" — the agent picked the Sauce Labs Fleece Jacket ($49.99) and completed checkout:
+
+![Sample order confirmation](examples/sample_order_confirmation.png)
 
 ## Setup
 
