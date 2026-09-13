@@ -12,7 +12,7 @@ from .search import search_many
 from .fetch import fetch_text
 from .shop_browser import Product, buy_product, list_products
 
-MODEL_NAME = "gemini-3.6-flash"
+MODEL_NAME = "gemini-3.1-flash-lite"
 
 
 def _get_client() -> genai.Client:
