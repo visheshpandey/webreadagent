@@ -69,13 +69,13 @@ def _choose_product(client: genai.Client, want: str, market_context: str, produc
 
 
 def run(want: str, buyer_first_name: str, buyer_last_name: str, buyer_zip: str,
-        screenshot_path: str, log=print) -> dict:
+        screenshot_path: str, log=print, headless: bool = True, slow_mo_ms: int = 0) -> dict:
     client = _get_client()
 
     market_context = _research_market_context(client, want, log)
 
     log("Reading live product catalog...")
-    products = list_products(log=log)
+    products = list_products(log=log, headless=headless)
 
     log("Reasoning about the best match...")
     chosen, reason = _choose_product(client, want, market_context, products)
@@ -85,6 +85,7 @@ def run(want: str, buyer_first_name: str, buyer_last_name: str, buyer_zip: str,
     order = buy_product(
         chosen.name, buyer_first_name, buyer_last_name, buyer_zip,
         screenshot_path=screenshot_path, log=log,
+        headless=headless, slow_mo_ms=slow_mo_ms,
     )
 
     return {

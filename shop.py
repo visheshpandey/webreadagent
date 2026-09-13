@@ -21,6 +21,14 @@ def main() -> int:
     parser.add_argument("--last-name", default="Forge")
     parser.add_argument("--zip", default="94107")
     parser.add_argument("--screenshot", default="order_confirmation.png")
+    parser.add_argument(
+        "--headed", action="store_true",
+        help="Show the real browser window instead of running headless (useful for screen recordings)",
+    )
+    parser.add_argument(
+        "--slow-mo", type=int, default=300,
+        help="Milliseconds to slow down each browser action by in --headed mode (default: 300)",
+    )
     args = parser.parse_args()
 
     load_dotenv()
@@ -32,6 +40,8 @@ def main() -> int:
             buyer_last_name=args.last_name,
             buyer_zip=args.zip,
             screenshot_path=args.screenshot,
+            headless=not args.headed,
+            slow_mo_ms=args.slow_mo if args.headed else 0,
         )
     except RuntimeError as e:
         print(f"Error: {e}", file=sys.stderr)

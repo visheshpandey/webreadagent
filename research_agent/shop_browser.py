@@ -22,10 +22,10 @@ class Product:
     description: str
 
 
-def list_products(log=print) -> list[Product]:
+def list_products(log=print, headless: bool = True) -> list[Product]:
     """Log in and scrape the live product catalog (name, price, description)."""
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(headless=headless)
         page = browser.new_page()
         page.goto(BASE_URL, timeout=20000)
         page.fill("#user-name", LOGIN_USER)
@@ -48,14 +48,17 @@ def list_products(log=print) -> list[Product]:
 
 
 def buy_product(product_name: str, buyer_first_name: str, buyer_last_name: str,
-                 buyer_zip: str, screenshot_path: str, log=print) -> dict:
+                 buyer_zip: str, screenshot_path: str, log=print,
+                 headless: bool = True, slow_mo_ms: int = 0) -> dict:
     """Log in, add the named product to cart, and complete checkout end-to-end.
 
     Returns a dict with the order summary and confirmation message. This is a
     real, reversible action (no real payment) that leaves a screenshot as proof.
+    Set headless=False (and optionally slow_mo_ms) to watch the browser live,
+    e.g. for a screen-recorded demo.
     """
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(headless=headless, slow_mo=slow_mo_ms)
         page = browser.new_page()
         page.goto(BASE_URL, timeout=20000)
         page.fill("#user-name", LOGIN_USER)
@@ -88,6 +91,9 @@ def buy_product(product_name: str, buyer_first_name: str, buyer_last_name: str,
 
         page.screenshot(path=screenshot_path, full_page=True)
         log(f"Saved confirmation screenshot to {screenshot_path}")
+
+        if not headless:
+            page.wait_for_timeout(3000)
 
         browser.close()
 

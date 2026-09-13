@@ -43,6 +43,16 @@ Sample run: asked for "a lightweight jacket for cool weather under 50 dollars" â
 
 ![Sample order confirmation](examples/sample_order_confirmation.png)
 
+### Recording a demo
+
+Pass `--headed` to watch a real, visible browser window click through add-to-cart and checkout live (great for a screen recording), instead of running headless:
+
+```bash
+python shop.py "a durable backpack for daily commuting under 40 dollars" --headed
+```
+
+`--slow-mo` (default `300`, only applies with `--headed`) adds a delay in milliseconds between browser actions so each click is easy to follow on camera.
+
 ## Setup
 
 ```bash
