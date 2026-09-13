@@ -34,6 +34,11 @@ def main() -> int:
         help="Record the checkout session as a video via Anakin's Browser API (requires ANAKIN_API_KEY)",
     )
     parser.add_argument("--video", default="order_session.webm", help="Path to save the recorded session video to")
+    parser.add_argument(
+        "--local-browser", action="store_true",
+        help="Force a local browser instead of Anakin's cloud browser, even if ANAKIN_API_KEY is set "
+             "(combine with --headed to get a real visible window for a live screen recording)",
+    )
     args = parser.parse_args()
 
     load_dotenv()
@@ -49,6 +54,7 @@ def main() -> int:
             slow_mo_ms=args.slow_mo if args.headed else 0,
             record=args.record,
             video_path=args.video,
+            use_anakin_browser=not args.local_browser,
         )
     except RuntimeError as e:
         print(f"Error: {e}", file=sys.stderr)

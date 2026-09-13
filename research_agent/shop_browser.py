@@ -29,9 +29,12 @@ class Product:
     description: str
 
 
-def _open_browser(p, log, headless: bool = True, slow_mo_ms: int = 0, record: bool = False):
-    """Return (browser, page). Prefers Anakin's cloud browser when configured."""
-    if anakin_client.is_configured():
+def _open_browser(p, log, headless: bool = True, slow_mo_ms: int = 0, record: bool = False,
+                   use_anakin_browser: bool = True):
+    """Return (browser, page). Prefers Anakin's cloud browser when configured,
+    unless use_anakin_browser=False forces a local browser (e.g. so a headed
+    run is visible on screen for a live recording)."""
+    if use_anakin_browser and anakin_client.is_configured():
         try:
             opts = anakin_client.browser_connect_options(record=record)
             browser = p.chromium.connect_over_cdp(opts["ws_endpoint"], headers=opts["headers"])
@@ -49,10 +52,10 @@ def _open_browser(p, log, headless: bool = True, slow_mo_ms: int = 0, record: bo
     return browser, page
 
 
-def list_products(log=print, headless: bool = True) -> list[Product]:
+def list_products(log=print, headless: bool = True, use_anakin_browser: bool = True) -> list[Product]:
     """Log in and scrape the live product catalog (name, price, description)."""
     with sync_playwright() as p:
-        browser, page = _open_browser(p, log, headless=headless)
+        browser, page = _open_browser(p, log, headless=headless, use_anakin_browser=use_anakin_browser)
         page.goto(BASE_URL, timeout=20000)
         page.fill("#user-name", LOGIN_USER)
         page.fill("#password", LOGIN_PASS)
@@ -75,17 +78,23 @@ def list_products(log=print, headless: bool = True) -> list[Product]:
 
 def buy_product(product_name: str, buyer_first_name: str, buyer_last_name: str,
                  buyer_zip: str, screenshot_path: str, log=print,
-                 headless: bool = True, slow_mo_ms: int = 0, record: bool = False) -> dict:
+                 headless: bool = True, slow_mo_ms: int = 0, record: bool = False,
+                 use_anakin_browser: bool = True) -> dict:
     """Log in, add the named product to cart, and complete checkout end-to-end.
 
     Returns a dict with the order summary and confirmation message. This is a
     real, reversible action (no real payment) that leaves a screenshot as proof.
     Set headless=False (and optionally slow_mo_ms) to watch a local browser live.
     Set record=True (requires ANAKIN_API_KEY) to have Anakin record the remote
-    session server-side as a WebM video.
+    session server-side as a WebM video. Set use_anakin_browser=False to force
+    a local browser even when ANAKIN_API_KEY is set (e.g. so --headed opens a
+    real window on screen for a live recording instead of running in the cloud).
     """
     with sync_playwright() as p:
-        browser, page = _open_browser(p, log, headless=headless, slow_mo_ms=slow_mo_ms, record=record)
+        browser, page = _open_browser(
+            p, log, headless=headless, slow_mo_ms=slow_mo_ms, record=record,
+            use_anakin_browser=use_anakin_browser,
+        )
         page.goto(BASE_URL, timeout=20000)
         page.fill("#user-name", LOGIN_USER)
         page.fill("#password", LOGIN_PASS)
